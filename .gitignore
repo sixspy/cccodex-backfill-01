@@ -3,4 +3,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 instance/*.db
+instance/*.db-wal
+instance/*.db-shm
 .env

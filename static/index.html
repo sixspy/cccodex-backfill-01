@@ -15,11 +15,14 @@
       </div>
       <button type="button" id="btn-logout">退出</button>
     </div>
-    <div class="chips">
-      <button type="button" data-tab="windows" class="on">回灌窗口</button>
+    <div class="chips" id="tabs">
+      <button type="button" data-tab="windows" class="on">回灌列表</button>
       <button type="button" data-tab="plan">切片计划</button>
-      <button type="button" data-tab="replay">重放落库</button>
-      <button type="button" data-tab="coverage">覆盖对账</button>
+      <button type="button" data-tab="replay">日切详情</button>
+      <button type="button" data-tab="daily">日增量灌数</button>
+      <button type="button" data-tab="mutex">互斥账册</button>
+      <button type="button" data-tab="coverage">对账目录</button>
+      <button type="button" data-tab="log">编排留痕</button>
     </div>
     <p class="muted" id="msg"></p>
     <div id="view"></div>

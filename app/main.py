@@ -8,10 +8,15 @@ from app.config import Config
 from app.db import init_db
 from app.services.errors import ServiceError
 from app.services.windows import (
+    close_window,
     coverage_report,
+    daily_ingest,
     list_coverage,
+    list_log,
+    list_mutexes,
     list_slices,
     list_windows,
+    open_window,
     plan_slices,
     replay_slice,
 )
@@ -129,7 +134,25 @@ class ApiSlices:
     async def on_get(self, req, resp, window_id):
         try:
             require_user(req)
-            _json(resp, {"items": list_slices(int(window_id))})
+            _json(resp, list_slices(int(window_id)))
+        except ServiceError as exc:
+            _json(resp, {"error": exc.message}, exc.status_code)
+
+
+class ApiOpen:
+    async def on_post(self, req, resp, window_id):
+        try:
+            require_user(req)
+            _json(resp, open_window(int(window_id)))
+        except ServiceError as exc:
+            _json(resp, {"error": exc.message}, exc.status_code)
+
+
+class ApiClose:
+    async def on_post(self, req, resp, window_id):
+        try:
+            require_user(req)
+            _json(resp, close_window(int(window_id)))
         except ServiceError as exc:
             _json(resp, {"error": exc.message}, exc.status_code)
 
@@ -139,6 +162,45 @@ class ApiReplay:
         try:
             require_user(req)
             _json(resp, {"slice": replay_slice(int(slice_id))})
+        except ServiceError as exc:
+            _json(resp, {"error": exc.message}, exc.status_code)
+
+
+class ApiDaily:
+    async def on_post(self, req, resp):
+        try:
+            require_user(req)
+            body = await req.get_media() or {}
+            _json(
+                resp,
+                {
+                    "result": daily_ingest(
+                        str(body.get("table_name", "")),
+                        str(body.get("biz_date", "")),
+                        int(body.get("rows", 1)),
+                    )
+                },
+            )
+        except ServiceError as exc:
+            _json(resp, {"error": exc.message}, exc.status_code)
+        except (TypeError, ValueError):
+            _json(resp, {"error": "日期或行数无效"}, 400)
+
+
+class ApiMutexes:
+    async def on_get(self, req, resp):
+        try:
+            require_user(req)
+            _json(resp, {"items": list_mutexes()})
+        except ServiceError as exc:
+            _json(resp, {"error": exc.message}, exc.status_code)
+
+
+class ApiLog:
+    async def on_get(self, req, resp):
+        try:
+            require_user(req)
+            _json(resp, {"items": list_log()})
         except ServiceError as exc:
             _json(resp, {"error": exc.message}, exc.status_code)
 
@@ -175,7 +237,12 @@ def create_app() -> falcon.asgi.App:
     app.add_route("/api/windows", ApiWindows())
     app.add_route("/api/windows/{window_id:int}/plan", ApiPlan())
     app.add_route("/api/windows/{window_id:int}/slices", ApiSlices())
+    app.add_route("/api/windows/{window_id:int}/open", ApiOpen())
+    app.add_route("/api/windows/{window_id:int}/close", ApiClose())
     app.add_route("/api/slices/{slice_id:int}/replay", ApiReplay())
+    app.add_route("/api/daily-rows", ApiDaily())
+    app.add_route("/api/mutexes", ApiMutexes())
+    app.add_route("/api/orchestration-log", ApiLog())
     app.add_route("/api/coverage-reports", ApiCoverage())
     app.add_static_route("/static", str(STATIC))
     return app
